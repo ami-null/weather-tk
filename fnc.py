@@ -7,19 +7,19 @@ from PIL import Image, ImageTk
 import concurrent.futures
 
 
-def btn_pressed(mainwindow, inp):
+def btn_pressed(mainwindow, input_value):
     # disable the submit button till the function completes or errors in other function
     # error probably will only occur in httpreq()
     # so there is a line of code to enable the button again in case of error
 
     # tk.after(0, some_func, args) schedules some_func(args) to be run in tkinter's main thread after 0 ms
     # writing it this way, because someguy said I should only do stuff to tkinter from its own thread
-    mainwindow.after(0, mainwindow.input.get_btn.configure, {'state':tk.DISABLED})
+    mainwindow.after(0, mainwindow.input_frame.get_btn.configure, {'state':tk.DISABLED})
 
-    current_weather = get_current_weather(mainwindow, inp)    # fetches current weather, displays it in the next line
+    current_weather = get_current_weather(mainwindow, input_value)    # fetches current weather, displays it in the next line
     mainwindow.after(0, write_current_output, mainwindow.current_weather_frame, current_weather)
 
-    mainwindow.after(0, mainwindow.space_label.pack)
+    #mainwindow.after(0, mainwindow.space_label.pack)
 
     # city coordinates, this is required because the next api request does not support calling by city name
     coords = get_city_coords(current_weather)
@@ -31,13 +31,22 @@ def btn_pressed(mainwindow, inp):
     process_icons(mainwindow, current_weather, forecast_weather['daily'])
 
     # since we are done fetching and displaying everything, we can now enable the button so that it can be pressed again
-    mainwindow.after(0, mainwindow.input.get_btn.configure, {'state':tk.NORMAL})
+    mainwindow.after(0, mainwindow.input_frame.get_btn.configure, {'state':tk.NORMAL})
     mainwindow.status_label.configure(text=f"Updated at {DT.datetime.now().strftime('%I:%M:%S %p')}")
+    mainwindow.after(0, update_history(mainwindow, input_value))
 
 
-def get_current_weather(mainwindow, inp):
+def update_history(mainwindow, input_value):
+    if input_value in mainwindow.history:
+        mainwindow.input_frame.history.remove(input_value)
+
+    mainwindow.input_frame.history.insert(0, input_value)
+    mainwindow.input_frame.input_combobox.configure(values = mainwindow.input_frame.history)
+    mainwindow.input_frame.input_combobox.current(0)
+
+def get_current_weather(mainwindow, input_value):
     params = {
-        'q':inp,
+        'q':input_value,
         'units': mainwindow.UNIT,
         'appid': mainwindow.API_KEY
     }
@@ -128,7 +137,7 @@ def httpreq(mainwindow, url, params=None):
         mainwindow.status_label.configure(text=err)
 
         # setting the submit button to normal state because it was set to disabled when it was pressed
-        mainwindow.after(0, mainwindow.input.get_btn.configure, {'state':tk.NORMAL})
+        mainwindow.after(0, mainwindow.input_frame.get_btn.configure, {'state':tk.NORMAL})
 
         print(err)    # printing this if anyone wants to know where the error occured
         print(url.split("&appid")[0])    # we don't want the api key to be printed in the console
@@ -140,8 +149,8 @@ def httpreq(mainwindow, url, params=None):
 
 
 def write_current_output(current_weather_frame, weather):
-    current_weather_frame.pack()
-
+    #current_weather_frame.pack()
+    current_weather_frame['bg'] = '#CCCCCC'
     current_weather_frame.city_lab.configure(text=f"City: {weather['name']}, {weather['sys']['country']}")
     current_weather_frame.temp_lab.configure(text=f"Temp: {weather['main']['temp']}°C")
     current_weather_frame.feels_lab.configure(text=f"Feels like: {weather['main']['feels_like']}°C")
@@ -153,11 +162,14 @@ def write_current_output(current_weather_frame, weather):
     current_weather_frame.sunset_lab.configure(text=f"Sunset: {DT.datetime.utcfromtimestamp(weather['sys']['sunset']+weather['timezone']).strftime('%I:%M %p')}")
     current_weather_frame.icon_code = weather['weather'][0]['icon'] + "@2x"
     # the "@2x" is appended to the icon code because bigger icons from openweathermap has it in the filename
+    for widget in current_weather_frame.children.values():
+            widget['bg'] = "#CCCCCC"
 
 
 def write_forecast_daily_output(forecast_daily_frame, daily_weather, timezone_offset):
-    forecast_daily_frame.pack()
+    #forecast_daily_frame.pack()
     # starting from 1 because the 0th day is the current day
+    forecast_daily_frame['bg'] = '#CCCCCC'
     i = 1
     for frame in forecast_daily_frame.forecast_day_list:
         frame.day_label.configure(text = DT.datetime.utcfromtimestamp(daily_weather[i]['dt'] + timezone_offset).strftime('%a'))
@@ -165,4 +177,5 @@ def write_forecast_daily_output(forecast_daily_frame, daily_weather, timezone_of
         frame.weather_desc_label.configure(text = daily_weather[i]['weather'][0]['description'].capitalize())
         frame.temp_max_label.configure(text = f"{daily_weather[i]['temp']['max']}°C")
         frame.temp_min_label.configure(text = f"{daily_weather[i]['temp']['min']}°C")
+        frame.change_bg()
         i += 1
