@@ -33,7 +33,7 @@ More dependencies may be required as the proeject goes on.
 - ~~Add weather icons~~ (done)
 - ~~Add daily forecast for 7 days~~ (done)
 - Add hourly forecast for 24 hours
-- Add searched location history
+- ~~Add searched location history~~ (done)
 - Probably change how icons are cached
 - Maybe add theme support
 
