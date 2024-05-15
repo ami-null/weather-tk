@@ -16,13 +16,19 @@ def btn_pressed(mainwindow, input_value):
     # writing it this way, because someguy said I should only do stuff to tkinter from its own thread
     mainwindow.after(0, mainwindow.input_frame.get_btn.configure, {'state':tk.DISABLED})
 
-    current_weather = get_current_weather(mainwindow, input_value)    # fetches current weather, displays it in the next line
+    city_info = get_city_coords(mainwindow, input_value)
+    if len(city_info)==0:
+        mainwindow.status_label.configure(text="city not found")
+        mainwindow.after(0, mainwindow.input_frame.get_btn.configure, {'state':tk.NORMAL})
+    coords = {
+        "lon" : city_info[0]["lon"],
+        "lat" : city_info[0]["lat"]
+    }
+
+    current_weather = get_current_weather(mainwindow, coords)    # fetches current weather, displays it in the next line
     mainwindow.after(0, write_current_output, mainwindow.current_weather_frame, current_weather)
 
     #mainwindow.after(0, mainwindow.space_label.pack)
-
-    # city coordinates, this is required because the next api request does not support calling by city name
-    coords = get_city_coords(current_weather)
 
     forecast_weather = get_forecast_weather(mainwindow, coords)    # fetches forecast weather, displays it in the next line
     mainwindow.after(0, write_forecast_daily_output, mainwindow.forecast_daily_frame, forecast_weather['daily'], forecast_weather['timezone_offset'])
@@ -44,20 +50,23 @@ def update_history(mainwindow, input_value):
     mainwindow.input_frame.input_combobox.configure(values = mainwindow.input_frame.history)
     mainwindow.input_frame.input_combobox.current(0)
 
-def get_current_weather(mainwindow, input_value):
+def get_current_weather(mainwindow, coords):
     params = {
-        'q':input_value,
+        'lat' : coords['lat'],
+        'lon' : coords['lon'],
         'units': mainwindow.UNIT,
         'appid': mainwindow.API_KEY
     }
     return httpreq(mainwindow, mainwindow.WEATHER_CURRENT_URL, params)
 
 
-def get_city_coords(current_weather):
-    return {
-        "lon" : current_weather["coord"]["lon"],
-        "lat" : current_weather["coord"]["lat"]
+def get_city_coords(mainwindow, city):
+    params = {
+        'q' : city,
+        'appid': mainwindow.API_KEY
     }
+    resp = httpreq(mainwindow, mainwindow.GEOCODE_URL, params)
+    return resp
 
 
 def get_forecast_weather(mainwindow, coords):

@@ -18,6 +18,7 @@ class MainWindow(tk.Tk):
 
         self.WEATHER_CURRENT_URL = "http://api.openweathermap.org/data/2.5/weather?"
         self.WEATHER_FORECAST_URL = "https://api.openweathermap.org/data/2.5/onecall?"
+        self.GEOCODE_URL = "http://api.openweathermap.org/geo/1.0/direct?"
         self.UNIT = "metric"    # TODO: add option in the gui to change the unit
         self.API_KEY = self.init_api_key()
         self.history = self.load_history()
